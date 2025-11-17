@@ -17,4 +17,4 @@ main.o: Src/main.cpp Inc/bloom.h Inc/hashFunc.h
 	$(CXX) $(CFLAGS) -c -IInc Src/main.cpp -o main.o
 
 clean:
-	rm -f $(objs)
+	rm -f $(objs) tests

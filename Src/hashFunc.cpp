@@ -1,11 +1,12 @@
 #include "hashFunc.h"
 #include <random>
+#include <cmath>
 
 hashFunc::hashFunc() {
     // basic constructor --> does nothing!
 }
 
-hashFunc::hashFunc(int aIn, int bIn, int pIn, int mIn) {
+hashFunc::hashFunc(double aIn, double bIn, int pIn, int mIn) {
     a = aIn;
     b = bIn;
     p = pIn;
@@ -53,7 +54,8 @@ int hashFunc::hash(int x) {
         case PRIME:
             {
             // does the simple prime hash function
-            return ((a*x+b)%p)%m;
+            int primed = static_cast<int>(fmod(fmod(a*x+b, p), m));
+            return primed;
             break;
             }
         // type 2
