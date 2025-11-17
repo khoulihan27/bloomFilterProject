@@ -13,7 +13,8 @@ class hashFunc {
         hashFunc(); // default
         hashFunc(int aIn, int bIn, int pIn, int mIn); // type 1
         hashFunc(int sIn, int sizeIn); // type 2
-        hashFunc(hashFunc &h); // copy
+        hashFunc(const hashFunc &h); // copy
+        hashFunc& operator=(const hashFunc &h); // copy operator
         int hash(int x); // performs hash with given x
         types hashType = NONE; // type of hash
 

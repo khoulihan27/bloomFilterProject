@@ -1,12 +1,11 @@
-#ifndef BLOOM_H_
-#define BLOOM_H_
+#ifndef BLOOM_H
+#define BLOOM_H
+#include "hashFunc.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <iostream>
 #include <vector>
-
-#include "hashFunc.h"
 
 class Bloom {
     public:

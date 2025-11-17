@@ -30,6 +30,17 @@ std::uniform_int_distribution<int> uniformDist(0, p-1); // a and b gen
 std::vector<std::chrono::duration<double, std::milli>> primeTimeBloom;
 std::vector<std::chrono::duration<double, std::milli>> seedTimeBloom;
 
+// final outputs
+// hash tests
+std::vector<std::chrono::duration<double, std::milli>> finalAvgHashTimePrime;
+std::vector<std::chrono::duration<double, std::milli>> finalAvgHashTimeSeed;
+std::vector<std::vector<int>> finalDistributionsPrime(1, std::vector<int>(0, 0));
+std::vector<std::vector<int>> finalDistributionsSeed(1, std::vector<int>(0, 0));
+
+// bloom tests
+std::vector<double> finalFalsePosRatesPrime = {0};
+std::vector<double> finalFalsePosRatesSeed = {0};
+
 std::vector<hashFunc> hashesPrimes;
 std::vector<hashFunc> hashesSeeds;
 
@@ -44,6 +55,8 @@ void buildUniverse();
 void setHashes(Bloom &bPrime, Bloom &bSeed);
 void insertData(Bloom &bPrime, Bloom &bSeed);
 void testFalsePos(Bloom &bPrime, Bloom &bSeed);
+void writeHash();
+void writeBloom();
 
 int main() {
     int test = 1;
@@ -69,6 +82,8 @@ int main() {
 
     return 0;
 }
+
+// All
 
 void setSeeds() {
     for (int i = 0; i < seeds.size(); i++) {
@@ -107,58 +122,13 @@ void buildUniverse() {
     }
 }
 
-// Blooms
-void insertData(Bloom &bPrime, Bloom &bSeed) {
-    // measures time of each hash
-    auto start = std::chrono::steady_clock::now();
-    auto end = std::chrono::steady_clock::now();
-    auto duration = end - start;
-    std::uniform_int_distribution<int> startingRange(0, p-n);
-    // avoid dups?
-    int startIndex = startingRange(mt);
-    for (int i = startIndex; i < n; i++) {
-        stored[i] = universe[i];
 
-        start = std::chrono::steady_clock::now();
-        bPrime.insert(stored[i]);
-        end = std::chrono::steady_clock::now();
-        duration = end - start;
-        auto durationMilli = std::chrono::duration_cast<std::chrono::milliseconds>(duration);
-        primeTimeBloom.push_back(durationMilli);
-
-        start = std::chrono::steady_clock::now();
-        bSeed.insert(stored[i]);
-        end = std::chrono::steady_clock::now();
-        duration = end - start;
-        auto durationMilli = std::chrono::duration_cast<std::chrono::milliseconds>(duration);
-        seedTimeBloom.push_back(durationMilli);
-    }
-}
-
-void testFalsePos(Bloom &bPrime, Bloom &bSeed) {
-    int currIndex = 0;
-    std::unordered_set<int> tested; // could make into a vector lwk
-    for (int i = 0; i < 2*n; i++) {
-        currIndex = uniformDist(mt);
-        while (!(tested.find(universe[currIndex]) != tested.end())) {
-            currIndex = uniformDist(mt);
-        }
-        tested.insert(universe[currIndex]);
-
-        auto it = std::find(stored.begin(), stored.end(), universe[currIndex]);
-        if (bPrime.contains(universe[currIndex]) && !(it != stored.end())) {
-            avgFalsePosPrime++;
-        }
-        if (bSeed.contains(universe[currIndex]) && !(it != stored.end())) {
-            avgFalsePosSeed++;
-        }
-        // TODO: compute false pos rate
-    }
-}
+// Hash
 
 // insert w/ random data --> use chrono to test time --> csv data
 void testHashing() {
     // ten tests
+    
     for (int i = 0; i < 10; i++) {
         std::vector<int> inserted;
         inserted.resize(1000); // n
@@ -197,29 +167,96 @@ void testHashing() {
             seedIndices[i] = seed.hash(inserted[i]);
             end = std::chrono::steady_clock::now();
             duration = end - start;
-            auto durationMilli = std::chrono::duration_cast<std::chrono::milliseconds>(duration);
+            durationMilli = std::chrono::duration_cast<std::chrono::milliseconds>(duration);
             seedTime.push_back(durationMilli);
         }
 
+        std::cout << "Prime:" << std::endl;
+        for (int p = 0; p < primeIndices.size(); p++) {
+            std::cout << primeIndices[p] << std::endl;
+        }
+
+        std::cout << "Seed:" << std::endl;
+        for (int p = 0; p < seedIndices.size(); p++) {
+            std::cout << seedIndices[p] << std::endl;
+        }
+        
         auto primeTimeAvg = primeTime[0];
         for (int k = 1; k < primeTime.size(); k++) {
             primeTimeAvg += primeTime[k];
         }
         primeTimeAvg = primeTimeAvg/primeTime.size();
+        finalAvgHashTimePrime.push_back(primeTimeAvg);
 
         auto seedTimeAvg = seedTime[0];
         for (int k = 1; k < seedTime.size(); k++) {
             seedTimeAvg += seedTime[k];
         }
         seedTimeAvg = seedTimeAvg/seedTime.size();
-        // write to CSV
+        finalAvgHashTimeSeed.push_back(seedTimeAvg);
+        
+        finalDistributionsPrime.push_back(primeIndices);
+        finalDistributionsSeed.push_back(seedIndices);
     }
+    // write to CSV w/ helper func
+}
 
+void writeHash() {
 
 }
 
-void testBlooms() {
-    
+
+// Blooms
+
+void insertData(Bloom &bPrime, Bloom &bSeed) {
+    // measures time of each hash
+    auto start = std::chrono::steady_clock::now();
+    auto end = std::chrono::steady_clock::now();
+    auto duration = end - start;
+    std::uniform_int_distribution<int> startingRange(0, p-n);
+    // avoid dups?
+    int startIndex = startingRange(mt);
+    for (int i = startIndex; i < n; i++) {
+        stored[i] = universe[i];
+
+        start = std::chrono::steady_clock::now();
+        bPrime.insert(stored[i]);
+        end = std::chrono::steady_clock::now();
+        duration = end - start;
+        auto durationMilli = std::chrono::duration_cast<std::chrono::milliseconds>(duration);
+        primeTimeBloom.push_back(durationMilli);
+
+        start = std::chrono::steady_clock::now();
+        bSeed.insert(stored[i]);
+        end = std::chrono::steady_clock::now();
+        duration = end - start;
+        durationMilli = std::chrono::duration_cast<std::chrono::milliseconds>(duration);
+        seedTimeBloom.push_back(durationMilli);
+    }
+}
+
+void testFalsePos(Bloom &bPrime, Bloom &bSeed) {
+    int currIndex = 0;
+    std::unordered_set<int> tested; // could make into a vector lwk
+    for (int i = 0; i < 2*n; i++) {
+        currIndex = uniformDist(mt);
+        while (!(tested.find(universe[currIndex]) != tested.end())) {
+            currIndex = uniformDist(mt);
+        }
+        tested.insert(universe[currIndex]);
+
+        auto it = std::find(stored.begin(), stored.end(), universe[currIndex]);
+        if (bPrime.contains(universe[currIndex]) && !(it != stored.end())) {
+            avgFalsePosPrime++;
+        }
+        if (bSeed.contains(universe[currIndex]) && !(it != stored.end())) {
+            avgFalsePosSeed++;
+        }
+        // TODO: compute false pos rate
+    }
+}
+
+void testBlooms() {   
     for (int i = 0; i < c.size(); i++) { // going thru all c and k
         m = c[i] * k[i];
         Bloom TPrime(m, n);
@@ -239,7 +276,7 @@ void testBlooms() {
             setAandB();
             setHashes(TPrime, TSeed);
             insertData(TPrime, TSeed);
-            testFalsePos(TPrime, TSeed);
+            testFalsePos(TPrime, TSeed); // ultimately, choose median (sort...)
         }
     }
 }

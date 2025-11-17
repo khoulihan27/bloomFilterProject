@@ -1,0 +1,24 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Build Project",
+            "type": "shell",
+            "command": "C:/msys64/mingw64/bin/g++.exe",
+            "args": [
+                "-Wall",
+                "-Wextra",
+                "-std=c++17",
+                "-I", "Inc",
+                "Src/*.cpp",
+                "-o", "build/app.exe"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": ["$gcc"],
+            "detail": "Builds all project files using MinGW g++"
+        }
+    ]
+}

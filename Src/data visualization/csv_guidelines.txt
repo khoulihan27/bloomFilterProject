@@ -1,0 +1,14 @@
+Testing Hashes:
+    - maybe find avg number of hashes per bin?
+    - Test Name (distribution of bins, time, whatever else)
+        - Hash Name
+            - Stats (m, n, k, whatever), -1
+                -Test i, val, val, val, ..., val, -1, Test i+1, val, val, ...
+                    - -1 acts as end point!
+
+Testing Blooms:
+    - Test Name (false positive rate, time complexity (trade-offs?)) --> in the end, 2 graphs each per hash (3-4 total)
+        - Hash Name
+            - k1, val, k2, val, ..., ki, val, -1
+avg times   - t1, t2, t3, ..., ti, -1
+                    - -1 acts as end point!

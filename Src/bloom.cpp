@@ -1,9 +1,9 @@
+#include "bloom.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <iostream>
 #include <vector>
-
-#include "bloom.h"
 
 Bloom::Bloom(int mIn, int nIn) {
     m = mIn;

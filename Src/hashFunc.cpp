@@ -2,7 +2,7 @@
 #include <random>
 
 hashFunc::hashFunc() {
-    
+    // basic constructor --> does nothing!
 }
 
 hashFunc::hashFunc(int aIn, int bIn, int pIn, int mIn) {
@@ -21,15 +21,29 @@ hashFunc::hashFunc(int sIn, int sizeIn) {
     hashType = SEED;
 }
 
-hashFunc::hashFunc(hashFunc &h) {
-    a = h.a;
-    b = h.b;
-    p = h.p;
-    m = h.m;
-    s = h.s;
-    size = h.size;
-    uniformDist = h.uniformDist;
-    hashType = h.hashType;
+hashFunc::hashFunc(const hashFunc &h) {
+    this->a = h.a;
+    this->b = h.b;
+    this->p = h.p;
+    this->m = h.m;
+    this->s = h.s;
+    this->size = h.size;
+    this->uniformDist = h.uniformDist;
+    this->hashType = h.hashType;
+}
+
+hashFunc& hashFunc::operator=(const hashFunc &h) {
+    if (this != &h) {
+        this->a = h.a;
+        this->b = h.b;
+        this->p = h.p;
+        this->m = h.m;
+        this->s = h.s;
+        this->size = h.size;
+        this->uniformDist = h.uniformDist;
+        this->hashType = h.hashType;
+    }
+    return *this;
 }
 
 int hashFunc::hash(int x) {
@@ -37,18 +51,24 @@ int hashFunc::hash(int x) {
     switch(hashType) {
         // type 1
         case PRIME:
+            {
             // does the simple prime hash function
             return ((a*x+b)%p)%m;
             break;
+            }
         // type 2
         case SEED:
+            {
             // gets a random index between 0 and size of H given a random number gen
             std::mt19937 mt(s+x); // seed
             return uniformDist(mt);
             break;
+            }
         // in-case type defined as NONE (should never happen)    
         default:
+            {
             return -1;
             break;
+            }
     }
 }
