@@ -27,7 +27,7 @@ class hashFunc {
         
         // type 2 (seed)
         int s = -1;
-        int size = -1; // size of T 
+        int size = -1; // size of H 
         std::uniform_int_distribution<int> uniformDist;
 
 };

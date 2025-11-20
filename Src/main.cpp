@@ -4,9 +4,9 @@
 #include <random>
 #include <ctime>
 #include <fstream>
-#include <unordered_set>
 #include <algorithm>
 #include <vector>
+#include <unordered_set>
 
 #include "bloom.h"
 #include "hashFunc.h"
@@ -14,13 +14,14 @@
 const int n = 100000; // size of S
 
 // indices of each array map to one another for ease
-std::vector<int> c = {5, 10, 20, 50, 100, 200}; // const multiplied to n, fix this first
-std::vector<int> k = {4, 8, 15, 36, 70, 140}; // num hashes, tune to find optimal for c (ceiling of c ln 2 is MOST optimal)
+std::vector<int> c = {2, 5, 10, 15, 20}; // const multiplied to n, fix this first
+// k = num hashes, tune to find optimal for c (ceiling of c ln 2 is MOST optimal), test a wide range
+// change this, fix c and then sweep k values (test MANY k's with each C)
 
 int m = -1; // bloom size (c * n)
 // size of universe = 2^31 - 1
 const int p = 2147483647; // 2^31 - 1
-std::vector<int> stored(n);
+std::unordered_set<int> stored(n);
 
 std::vector<int> a; // type 1
 std::vector<int> b; // type 2
@@ -34,28 +35,34 @@ std::vector<double> seedTimeBloom;
 // hash tests
 std::vector<double> finalAvgHashTimePrime;
 std::vector<double> finalAvgHashTimeSeed;
-std::vector<std::vector<int>> finalDistributionsPrime(1, std::vector<int>(0, 0));
-std::vector<std::vector<int>> finalDistributionsSeed(1, std::vector<int>(0, 0));
+std::vector<std::vector<int>> finalDistributionsPrime(0, std::vector<int>(0, 0));
+std::vector<std::vector<int>> finalDistributionsSeed(0, std::vector<int>(0, 0));
 
 // bloom tests
-std::vector<double> finalFalsePosRatesPrime = {0};
-std::vector<double> finalFalsePosRatesSeed = {0};
+// each vector is the MEDIAN (OR AVERAGE??) false pos rate per k for THAT c --> {2, 5, 10, 15, 20} (index 0 -> c = 2)
+// each index of those vectors corresponds to a k value where index 0 is k = 1
+
+std::vector<std::vector<double>> finalFalsePosRatesPrime;
+std::vector<std::vector<double>> finalFalsePosRatesSeed;
 
 std::vector<hashFunc> hashesPrimes;
 std::vector<hashFunc> hashesSeeds;
 
-double avgFalsePosPrime = 0.0;
-double avgFalsePosSeed = 0.0;
+double falsePosPrime = 0.0;
+double falsePosSeed = 0.0;
 
 void testHashing();
 void testBlooms();
 void setSeeds();
 void setAandB();
 void setHashes(Bloom &bPrime, Bloom &bSeed);
-void insertData(Bloom &bPrime, Bloom &bSeed);
+void insertLinearData(Bloom &bPrime, Bloom &bSeed);
+void insertRandomData(Bloom &bPrime, Bloom &bSeed);
 void testFalsePos(Bloom &bPrime, Bloom &bSeed);
-void writeHash();
-void writeBloom();
+void writeHash(std::vector<int> primeIndices, std::vector<int> primeIndicesLinear, std::vector<double> primeTime, std::vector<double> primeTimeLinear,
+                std::vector<int> seedIndices, std::vector<int> seedIndicesLinear, std::vector<double> seedTime, std::vector<double> seedTimeLinear,
+                std::vector<int> storedRand, std::vector<int> storedLinear);
+void writeBlooms();
 
 int main() {
     int test = 1;
@@ -86,7 +93,7 @@ int main() {
 
 void setSeeds() {
     for (int i = 0; i < seeds.size(); i++) {
-        seeds[i] = mt();
+        seeds[i] = uniformDist(mt);
     }
 }
 
@@ -104,11 +111,8 @@ void setAandB() {
 
 void setHashes(Bloom &bPrime, Bloom &bSeed) {
     for (int i = 0; i < a.size(); i++) {
-        hashFunc tempHashPrime(a[i], b[i], p, m);
-        hashFunc tempHashSeed(seeds[i], m);
-        
-        hashesPrimes[i] = tempHashPrime;
-        hashesSeeds[i] = tempHashSeed;
+        hashesPrimes.emplace_back(a[i], b[i], p, m);
+        hashesSeeds.emplace_back(seeds[i], m);
     }
     bPrime.hashFunctions = hashesPrimes;
     bSeed.hashFunctions = hashesSeeds;
@@ -118,64 +122,79 @@ void setHashes(Bloom &bPrime, Bloom &bSeed) {
 // Hash
 
 // insert w/ random data --> use chrono to test time --> csv data
+// test with linear data?
 void testHashing() {
     // ten tests
     
-    for (int i = 0; i < 10; i++) {
-        std::vector<int> inserted;
-        inserted.resize(1000); // n
-
-        std::vector<int> primeIndices;
-        primeIndices.resize(1000); // c = 4
-        std::vector<double> primeTime;
+    std::vector<int> primeIndices;
+    std::vector<int> primeIndicesLinear;
+    std::vector<double> primeTime;
+    std::vector<double> primeTimeLinear;
+    std::vector<int> seedIndices; 
+    std::vector<int> seedIndicesLinear;
+    std::vector<double> seedTime;
+    std::vector<double> seedTimeLinear;
+    std::vector<int> storedRand;
+    std::vector<int> storedLinear;
         double a = (double)uniformDist(mt);
         while (a == 0) { // a cannot be 0!
             a = (double)uniformDist(mt);
         }
         double b = (double)uniformDist(mt);
-        hashFunc prime(a, b, p, 4000); // c = 4
-
-        std::vector<int> seedIndices;
-        seedIndices.resize(1000);
-        std::vector<double> seedTime;
-        hashFunc seed(mt(), 4000);
+        hashFunc prime(a, b, p, 10*n); // c = 10 
+        hashFunc seed(mt(), 10*n);
 
         // measures time of each hash
         auto start = std::chrono::steady_clock::now();
         auto end = std::chrono::steady_clock::now();
         auto duration = end - start;
-        for (int i = 0; i < 1000; i++) {
-            inserted[i] = uniformDist(mt);
+        
+        // rand data
+        int currData = 0;
+        for (int i = 0; i < n; i++) {
+            currData = uniformDist(mt);
+            storedRand.push_back(currData);
 
             start = std::chrono::steady_clock::now();
-            primeIndices[i] = prime.hash(inserted[i]);
+            primeIndices.push_back(prime.hash(currData));
             end = std::chrono::steady_clock::now();
             duration = end - start;
             auto durationMicro = std::chrono::duration_cast<std::chrono::microseconds>(duration);
             primeTime.push_back(durationMicro.count());
 
             start = std::chrono::steady_clock::now();
-            seedIndices[i] = seed.hash(inserted[i]);
+            seedIndices.push_back(seed.hash(currData));
             end = std::chrono::steady_clock::now();
             duration = end - start;
             durationMicro = std::chrono::duration_cast<std::chrono::microseconds>(duration);
             seedTime.push_back(durationMicro.count());
         }
-/*
-        std::cout << "Prime:" << std::endl;
-        for (int p = 0; p < primeIndices.size(); p++) {
-            std::cout << primeIndices[p] << std::endl;
+
+        // linear data first odd n
+        for (int i = 1; i < 2*n; i++) {
+            if (i % 2 != 1) {
+                i++;
+            }
+            storedLinear.push_back(i);
+
+            start = std::chrono::steady_clock::now();
+            primeIndicesLinear.push_back(prime.hash(i));
+            end = std::chrono::steady_clock::now();
+            duration = end - start;
+            auto durationMicro = std::chrono::duration_cast<std::chrono::microseconds>(duration);
+            primeTimeLinear.push_back(durationMicro.count());
+
+            start = std::chrono::steady_clock::now();
+            seedIndicesLinear.push_back(seed.hash(i));
+            end = std::chrono::steady_clock::now();
+            duration = end - start;
+            durationMicro = std::chrono::duration_cast<std::chrono::microseconds>(duration);
+            seedTimeLinear.push_back(durationMicro.count());
         }
 
-        std::cout << "Seed:" << std::endl;
-        for (int p = 0; p < seedIndices.size(); p++) {
-            std::cout << seedIndices[p] << std::endl;
-        }
-*/
-
-        double primeTimeAvg = primeTime[0];
+        double primeTimeAvg = primeTime[0] + primeTimeLinear[0];
         for (int k = 1; k < primeTime.size(); k++) {
-            primeTimeAvg += primeTime[k];
+            primeTimeAvg += (primeTime[k]);
         }
         primeTimeAvg = primeTimeAvg/primeTime.size();
         finalAvgHashTimePrime.push_back(primeTimeAvg);
@@ -189,41 +208,95 @@ void testHashing() {
         
         finalDistributionsPrime.push_back(primeIndices);
         finalDistributionsSeed.push_back(seedIndices);
-    }
-    // write to CSV w/ helper func
+    // write to CSV w/ helper func  
 
+    for (int o = 0; o < finalAvgHashTimePrime.size(); o++) {
+        std::cout << finalAvgHashTimePrime[o] << std::endl;
+    }
     for (int o = 0; o < finalAvgHashTimeSeed.size(); o++) {
         std::cout << finalAvgHashTimeSeed[o] << std::endl;
     }
+
+    writeHash(primeIndices, primeIndicesLinear, primeTime, primeTimeLinear,
+                seedIndices, seedIndicesLinear, seedTime, seedTimeLinear,
+                storedRand, storedLinear);
 }
 
-void writeHash() {
+void writeHash(std::vector<int> primeIndices, std::vector<int> primeIndicesLinear, std::vector<double> primeTime, std::vector<double> primeTimeLinear,
+                std::vector<int> seedIndices, std::vector<int> seedIndicesLinear, std::vector<double> seedTime, std::vector<double> seedTimeLinear,
+                std::vector<int> storedRand, std::vector<int> storedLinear) {
+                std::fstream hashFilePrime, hashFileSeed;
+                
+                hashFilePrime.open("Data/hashPrime.csv", std::fstream::out);
+                hashFileSeed.open("Data/hashSeed.csv", std::fstream::out);
+
+                for (int i = 0; i < primeIndices.size(); i++) {
+                    hashFilePrime << storedRand[i] << storedLinear[i] <<"," << primeIndices[i] << primeIndicesLinear[i] <<"," << primeTime[i] << primeTimeLinear[i] << "," << "\n";
+                    hashFileSeed << storedRand[i] << storedLinear[i] << "," << seedIndices[i] << seedIndicesLinear[i] << "," << seedTime[i] << seedTimeLinear[i] << "," << "\n";
+                }
+
+                hashFilePrime.close();
+                hashFileSeed.close();
+
+                
+
 
 }
 
 
 // Blooms
 
-void insertData(Bloom &bPrime, Bloom &bSeed) {
+void insertLinearData(Bloom &bPrime, Bloom &bSeed) {
     // measures time of each hash
     auto start = std::chrono::steady_clock::now();
     auto end = std::chrono::steady_clock::now();
     auto duration = end - start;
-    std::uniform_int_distribution<int> startingRange(0, p);
+    std::uniform_int_distribution<> startingRange(0, p-n);
     // avoid dups?
     int startIndex = startingRange(mt);
-    for (int i = startIndex; i < n; i++) {
-        stored[i] = uniformDist(mt);
+    std::cout << p-n << std::endl;
+    std::cout << startIndex << std::endl;
+    int storedIndex = 0;
+    for (int i = startIndex; i < (startIndex + n); i++) {
+        stored.insert(i);
+        storedIndex++;
 
         start = std::chrono::steady_clock::now();
-        bPrime.insert(stored[i]);
+        bPrime.insert(i);
         end = std::chrono::steady_clock::now();
         duration = end - start;
         auto durationMicro = std::chrono::duration_cast<std::chrono::microseconds>(duration);
         primeTimeBloom.push_back(durationMicro.count());
 
         start = std::chrono::steady_clock::now();
-        bSeed.insert(stored[i]);
+        bSeed.insert(i);
+        end = std::chrono::steady_clock::now();
+        duration = end - start;
+        durationMicro = std::chrono::duration_cast<std::chrono::microseconds>(duration);
+        seedTimeBloom.push_back(durationMicro.count());
+    }
+}
+
+void insertRandomData(Bloom &bPrime, Bloom &bSeed) {
+    // measures time of each hash
+    auto start = std::chrono::steady_clock::now();
+    auto end = std::chrono::steady_clock::now();
+    auto duration = end - start;
+    int currData = 0;
+    for (int i = 0; i < n; i++) {
+        currData = uniformDist(mt);
+        stored.insert(currData);
+        // std::cout << "stored: " << stored[i] << std::endl;
+
+        start = std::chrono::steady_clock::now();
+        bPrime.insert(currData);
+        end = std::chrono::steady_clock::now();
+        duration = end - start;
+        auto durationMicro = std::chrono::duration_cast<std::chrono::microseconds>(duration);
+        primeTimeBloom.push_back(durationMicro.count());
+
+        start = std::chrono::steady_clock::now();
+        bSeed.insert(currData);
         end = std::chrono::steady_clock::now();
         duration = end - start;
         durationMicro = std::chrono::duration_cast<std::chrono::microseconds>(duration);
@@ -233,49 +306,107 @@ void insertData(Bloom &bPrime, Bloom &bSeed) {
 
 void testFalsePos(Bloom &bPrime, Bloom &bSeed) {
     int currVal = 0;
-    std::unordered_set<int> tested; // could make into a vector lwk
-    for (int i = 0; i < 2*n; i++) {
+    double trueNegPrime = 0.0;
+    double trueNegSeed = 0.0;
+    for (int i = 0; i < 50000; i++) {
+        // std::cout << i << std::endl;
         currVal = uniformDist(mt);
-        while (!(tested.find(currVal) != tested.end())) {
-            currVal = uniformDist(mt);
-        }
-        tested.insert(currVal);
 
-        auto it = std::find(stored.begin(), stored.end(), currVal);
-        if (bPrime.contains(currVal) && !(it != stored.end())) {
-            avgFalsePosPrime++;
+        auto it = stored.find(currVal);
+        if (bPrime.contains(currVal) && it == stored.end()) {
+            falsePosPrime++;
         }
-        if (bSeed.contains(currVal) && !(it != stored.end())) {
-            avgFalsePosSeed++;
+        else if (!bPrime.contains(currVal) && it == stored.end()) {
+            trueNegPrime++;
         }
-        // TODO: compute false pos rate
+        if (bSeed.contains(currVal) && it == stored.end()) {
+            falsePosSeed++;
+        }
+        else if (!bSeed.contains(currVal) && it == stored.end()) {
+            trueNegSeed++;
+        }
+
+        //std::cout << "val: " << currVal << ": in stored: " <<  !(it != stored.end()) << "; in bloom prime: " << bPrime.contains(currVal) << std::endl;
+        //std::cout << "val: " << currVal << ": in stored: " <<  !(it != stored.end()) << "; in bloom seed: " << bSeed.contains(currVal) << std::endl;
+        
     }
+    falsePosPrime = falsePosPrime/(falsePosPrime + trueNegPrime);
+    falsePosSeed = falsePosSeed/(falsePosSeed + trueNegSeed);
 }
 
+
 void testBlooms() {   
-    for (int i = 0; i < c.size(); i++) { // going thru all c and k
-        m = c[i] * k[i];
-        Bloom TPrime(m, n);
-        Bloom TSeed(m, n);
-        seeds.resize(k[i]);
-        a.resize(k[i]);
-        b.resize(k[i]);
-        // find better way
-        primeTimeBloom.resize(0);
-        seedTimeBloom.resize(0);
-        for (int j = 0; j < 10; j++) { // 10 tests each
-            // make into vector in which i sum and divide at the end?
-            avgFalsePosPrime = 0.0;
-            avgFalsePosSeed = 0.0;
-            setSeeds();
-            setAandB();
-            setHashes(TPrime, TSeed);
-            insertData(TPrime, TSeed);
-            testFalsePos(TPrime, TSeed); // ultimately, choose median (sort...)
+    for (int i = 0; i < c.size(); i++) { // going thru all c
+        std::cout << "Testing c = " << c[i] << std::endl;
+        std::vector<double> medianFPRPrime = {0};
+        std::vector<double> medianFPRSeed = {0};
+        for (int k = 0; k < 22; k++) {
+            std::vector<double> kFPRPrime = {0};
+            std::vector<double> kFPRSeed = {0};
+            m = c[i] * n;
+            seeds.resize(k);
+            a.resize(k);
+            b.resize(k);
+            std::cout << "Testing k = " << k << std::endl;
+            for (int j = 0; j < 11; j++) { // 10 tests per k value
+                // make into vector in which i sum and divide at the end?
+                Bloom TPrime(m, n);
+                Bloom TSeed(m, n);
+                falsePosPrime = 0.0;
+                falsePosSeed = 0.0;
+                std::unordered_set<int> newStored;
+                stored = newStored;
+                setSeeds();
+                setAandB();
+                setHashes(TPrime, TSeed);
+                // insert linear also?
+                insertRandomData(TPrime, TSeed);
+                testFalsePos(TPrime, TSeed);
+                kFPRPrime.push_back(falsePosPrime);
+                kFPRSeed.push_back(falsePosSeed);
+                hashesPrimes.resize(0);
+                hashesSeeds.resize(0);
+                primeTimeBloom.resize(0);
+                seedTimeBloom.resize(0);
+            }
+            std::sort(kFPRPrime.begin(), kFPRPrime.end());
+            medianFPRPrime.push_back(kFPRPrime[(kFPRPrime.size() / 2) + 1]);
+            std::sort(kFPRSeed.begin(), kFPRSeed.end());
+            medianFPRSeed.push_back(kFPRSeed[(kFPRSeed.size() / 2) + 1]);
+            std::cout << kFPRPrime[(kFPRPrime.size() / 2) + 1] << std::endl;
+            std::cout << kFPRSeed[(kFPRSeed.size() / 2) + 1] << std::endl;
         }
+        finalFalsePosRatesPrime.push_back(medianFPRPrime);
+        finalFalsePosRatesSeed.push_back(medianFPRSeed);
     }
+    writeBlooms();
 }
 
 void writeBlooms() {
+    std::ofstream hashFilePrime, hashFileSeed;
+    hashFilePrime.open("Data/bloomPrime.csv", std::ofstream::out);
+    hashFileSeed.open("Data/bloomSeed.csv", std::ofstream::out);
 
+    hashFilePrime << "RANDOM\n";
+    hashFileSeed << "RANDOM\n";
+
+    for (int i = 0; i < c.size(); i++) {
+        for (int k = 0; k < 21; k++) {
+            hashFilePrime << i << "," << k << "," << finalFalsePosRatesPrime[i][k] << "," << "\n";
+            hashFileSeed << i << "," << k << "," << finalFalsePosRatesSeed[i][k] << "," << "\n";
+    
+        }    
+    }
+    /*
+    hashFilePrime << -1 << "\n";
+    hashFileSeed << -1 << "\n";
+    hashFilePrime << "LINEAR\n";
+    hashFileSeed << "LINEAR\n";
+    for (int i = 0; i < primeIndicesLinear.size(); i++) {
+        hashFilePrime << storedLinear[i] << "," << primeIndicesLinear[i] << "," << primeTimeLinear[i] << "," << "\n";
+        hashFileSeed << storedLinear[i] << "," << seedIndicesLinear[i] << "," << seedTimeLinear[i] << "," << "\n";
+    }
+    */
+    hashFilePrime.close();
+    hashFileSeed.close();
 }

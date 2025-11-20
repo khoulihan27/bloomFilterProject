@@ -1,14 +1,12 @@
+FOUR separate csvs --> hashPrime.csv, hashSeed.csv, bloomPrime.csv, bloomSeed.csv 
+
 Testing Hashes:
-    - maybe find avg number of hashes per bin?
-    - Test Name (distribution of bins, time, whatever else)
-        - Hash Name
-            - Stats (m, n, k, whatever), -1
-                -Test i, val, val, val, ..., val, -1, Test i+1, val, val, ...
-                    - -1 acts as end point!
+    per line:
+        random value, linear value, primeRand, primeLinear, timeRand, timeLinear
+
+    axes of dist of bins: y is the bin (hashed index) , x is the passed through value
 
 Testing Blooms:
-    - Test Name (false positive rate, time complexity (trade-offs?)) --> in the end, 2 graphs each per hash (3-4 total)
-        - Hash Name
-            - k1, val, k2, val, ..., ki, val, -1
-avg times   - t1, t2, t3, ..., ti, -1
-                    - -1 acts as end point!
+    Per line:
+        c, k, FPRRand, FPRLinear
+
