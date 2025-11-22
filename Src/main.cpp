@@ -11,10 +11,10 @@
 #include "bloom.h"
 #include "hashFunc.h"
 
-const int n = 100000; // size of S
+const int n = 10000; // size of S
 
 // indices of each array map to one another for ease
-std::vector<int> c = {2, 5, 10, 15, 20}; // const multiplied to n, fix this first
+std::vector<int> c = {2, 4, 6, 7, 10}; // const multiplied to n, fix this first
 // k = num hashes, tune to find optimal for c (ceiling of c ln 2 is MOST optimal), test a wide range
 // change this, fix c and then sweep k values (test MANY k's with each C)
 
@@ -170,9 +170,9 @@ void testHashing() {
             seedTime.push_back(durationMicro.count());
         }
 
-        // linear data first odd n
+        // linear data first even n
         for (int i = 1; i < 2*n; i++) {
-            if (i % 2 != 1) {
+            if (i % 2 != 0) {
                 i++;
             }
             storedLinear.push_back(i);
@@ -231,8 +231,8 @@ void writeHash(std::vector<int> primeIndices, std::vector<int> primeIndicesLinea
                 hashFileSeed.open("Data/hashSeed.csv", std::fstream::out);
 
                 for (int i = 0; i < primeIndices.size(); i++) {
-                    hashFilePrime << storedRand[i] << storedLinear[i] <<"," << primeIndices[i] << primeIndicesLinear[i] <<"," << primeTime[i] << primeTimeLinear[i] << "," << "\n";
-                    hashFileSeed << storedRand[i] << storedLinear[i] << "," << seedIndices[i] << seedIndicesLinear[i] << "," << seedTime[i] << seedTimeLinear[i] << "," << "\n";
+                    hashFilePrime << storedRand[i] << "," << storedLinear[i] << "," << primeIndices[i] << "," << primeIndicesLinear[i] << "," << primeTime[i] << "," << primeTimeLinear[i] << "," << "\n";
+                    hashFileSeed << storedRand[i] << "," << storedLinear[i] << "," << seedIndices[i] << "," << seedIndicesLinear[i] << "," << seedTime[i] << "," << seedTimeLinear[i] << "," << "\n";
                 }
 
                 hashFilePrime.close();
@@ -340,7 +340,7 @@ void testBlooms() {
         std::cout << "Testing c = " << c[i] << std::endl;
         std::vector<double> medianFPRPrime = {0};
         std::vector<double> medianFPRSeed = {0};
-        for (int k = 0; k < 22; k++) {
+        for (int k = 1; k < 22; k++) {
             std::vector<double> kFPRPrime = {0};
             std::vector<double> kFPRSeed = {0};
             m = c[i] * n;
@@ -378,6 +378,7 @@ void testBlooms() {
         }
         finalFalsePosRatesPrime.push_back(medianFPRPrime);
         finalFalsePosRatesSeed.push_back(medianFPRSeed);
+        std::cout << finalFalsePosRatesPrime[0][21] << std::endl;
     }
     writeBlooms();
 }
@@ -387,13 +388,10 @@ void writeBlooms() {
     hashFilePrime.open("Data/bloomPrime.csv", std::ofstream::out);
     hashFileSeed.open("Data/bloomSeed.csv", std::ofstream::out);
 
-    hashFilePrime << "RANDOM\n";
-    hashFileSeed << "RANDOM\n";
-
     for (int i = 0; i < c.size(); i++) {
-        for (int k = 0; k < 21; k++) {
-            hashFilePrime << i << "," << k << "," << finalFalsePosRatesPrime[i][k] << "," << "\n";
-            hashFileSeed << i << "," << k << "," << finalFalsePosRatesSeed[i][k] << "," << "\n";
+        for (int k = 1; k < 22; k++) {
+            hashFilePrime << c[i] << "," << k << "," << finalFalsePosRatesPrime[i][k] << "," << "\n";
+            hashFileSeed << c[i] << "," << k << "," << finalFalsePosRatesSeed[i][k] << "," << "\n";
     
         }    
     }

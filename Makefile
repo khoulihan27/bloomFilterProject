@@ -2,6 +2,8 @@ objs = bloom.o hashFunc.o main.o
 CXX = g++
 CFLAGS = -Wall -std=c++17 -O2 -IInc
 
+.PHONY: sweep
+
 all: $(objs) tests
 
 tests: $(objs)
@@ -18,3 +20,6 @@ main.o: Src/main.cpp Inc/bloom.h Inc/hashFunc.h
 
 clean:
 	rm -f $(objs) tests
+
+sweep:
+	rm -f $(objs)
