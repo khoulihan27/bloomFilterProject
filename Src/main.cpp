@@ -340,7 +340,7 @@ void testBlooms() {
         std::cout << "Testing c = " << c[i] << std::endl;
         std::vector<double> medianFPRPrime = {0};
         std::vector<double> medianFPRSeed = {0};
-        for (int k = 1; k < 22; k++) {
+        for (int k = 1; k < 23; k++) {
             std::vector<double> kFPRPrime = {0};
             std::vector<double> kFPRSeed = {0};
             m = c[i] * n;

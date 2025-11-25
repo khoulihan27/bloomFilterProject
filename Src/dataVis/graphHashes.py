@@ -70,15 +70,22 @@ def parseSeed():
             
 def plotHashes():
     print("plotting hashes")
-    fig, ax = plt.subplots(1, 2, figsize=(10,5))
+    fig, ax = plt.subplots(2, 2, figsize=(15,10))
     
-    ax[0].scatter(randomStored, primeRandIndices, color='blue', s=1)
-    ax[0].set_title("Prime Modulo Hashing (Random Data)")
-    ax[0].autoscale()
+    ax[0][0].scatter(randomStored, primeRandIndices, color='blue', s=1)
+    ax[0][0].set_title("Prime Modulo Hashing (Random Data)")
+    ax[0][0].autoscale()
+    ax[0][1].scatter(linearStored, primeLinearIndices, color='red', s=1)
+    ax[0][1].set_title("Prime Modulo Hashing (Linear Data)")
+    ax[0][1].autoscale()
     
-    ax[1].scatter(randomStored, seedRandIndices, color='green', s=1)
-    ax[1].set_title("Seeded Hashing (Random Data)")
-    ax[1].autoscale()
+    
+    ax[1][0].scatter(randomStored, seedRandIndices, color='green', s=1)
+    ax[1][0].set_title("Seeded Hashing (Random Data)")
+    ax[1][0].autoscale()
+    ax[1][1].scatter(linearStored, seedLinearIndices, color='black', s=1)
+    ax[1][1].set_title("Seeded Hashing (Linear Data)")
+    ax[1][1].autoscale()
     fig.tight_layout()
 
     print("finished plotting")
@@ -88,12 +95,18 @@ def plotHashes():
             
 def plotTime():
     print("plotting time")
-    plt.figure()
-    plt.scatter(randomStored, primeRandTime, color='orange', label='Prime Modulo', s=2)
-    plt.scatter(randomStored, seedRandTime, color='green', label='Seeded Hash', s=2)
-    plt.title("Time per Hash in ms (Random)")
-    plt.ylim(0, 30)
-    plt.legend()
+    fig, ax = plt.subplots(1, 2, figsize=(10,5))
+    ax[0].scatter(randomStored, primeRandTime, color='orange', label='Prime Modulo', s=2)
+    ax[0].scatter(randomStored, seedRandTime, color='green', label='Seeded Hash', s=2)
+    ax[0].set_title("Time per Hash in ms (Random)")
+    ax[0].set_ylim(0, 30)
+    ax[0].legend()
+    ax[1].scatter(linearStored, primeLinearTime, color='red', label='Prime Modulo', s=2)
+    ax[1].scatter(linearStored, seedLinearTime, color='blue', label='Seeded Hash', s=2)
+    ax[1].set_title("Time per Hash in ms (Linear)")
+    ax[1].set_ylim(0, 30)
+    ax[1].legend()
+    fig.tight_layout()
     
     plt.savefig("Graphs/hashTimes.png")
     
