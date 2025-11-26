@@ -21,5 +21,6 @@ main.o: Src/main.cpp Inc/bloom.h Inc/hashFunc.h
 clean:
 	rm -f $(objs) tests
 
+# removes ONLY obj .o files since they're annoying to look at
 sweep:
 	rm -f $(objs)

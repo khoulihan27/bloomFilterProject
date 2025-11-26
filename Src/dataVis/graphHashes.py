@@ -20,6 +20,7 @@ seedRandTime = list() # microsec
 seedLinearIndices = list()
 seedLinearTime = list() # microsec
     
+# parses prime hash data
 def parsePrime():
    # prime reader
     print("parsing prime")
@@ -47,7 +48,7 @@ def parsePrime():
                 i+=1 
             r+=1   
             
-    
+# parses seed hash data
 def parseSeed():
     # seed reader
     i = 0
@@ -67,7 +68,8 @@ def parseSeed():
                     case 5:
                         seedLinearTime.append(float(value))
                 i += 1   
-            
+   
+# plots indices for prime and seeded hashing         
 def plotHashes():
     print("plotting hashes")
     fig, ax = plt.subplots(2, 2, figsize=(15,10))
@@ -92,7 +94,8 @@ def plotHashes():
 
     plt.savefig("Graphs/hashes.png")
     plt.clf()
-            
+         
+# plots runtimes of seeded and prime hashing   
 def plotTime():
     print("plotting time")
     fig, ax = plt.subplots(1, 2, figsize=(10,5))
@@ -133,7 +136,5 @@ def main():
     plotTime()
     
     exit
-    
-    # graph stuff here
 
 main()

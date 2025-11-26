@@ -30,6 +30,7 @@ seedRandFPR7 = list()
 seedRandFPR10 = list()
 seedLinearFPR = list()
     
+# gets theoretical false positive times as a list dataset
 def graphIdeal(c):
     ideal = list()
     for i in range(0, 22):  
@@ -38,7 +39,7 @@ def graphIdeal(c):
     return ideal    
     
     
-
+# parses the naive hash data
 def parsePrime():
    # prime reader
     print("parsing prime")
@@ -75,7 +76,8 @@ def parsePrime():
             r+=1   
             kCount+=1 
             
-    
+
+# parses the seed hash data
 def parseSeed():
     # seed reader
     i = 0
@@ -107,7 +109,8 @@ def parseSeed():
                                     seedRandFPR10.append(float(value))
                 i+=1
             kCount+=1 
-            
+   
+# plots the FPRs of the filters         
 def plotBlooms():
     print("plotting hashes")
     fig, ax = plt.subplots(2, 2, figsize=(15,10))
@@ -171,26 +174,9 @@ def plotBlooms():
     plt.savefig("Graphs/seedBlooms.png")
     plt.clf()
     
-    
-
-def main():
-    parsePrime()
-    parseSeed()
-    
-    np.array(primeRandFPR2)
-    np.array(primeRandFPR4)
-    np.array(primeRandFPR6)
-    np.array(primeRandFPR7)
-    np.array(primeRandFPR10)
-    
-    np.array(seedRandFPR2)
-    np.array(seedRandFPR4)
-    np.array(seedRandFPR6)
-    np.array(seedRandFPR7)
-    np.array(seedRandFPR10)
-    
-    plotBlooms()
-    
+# gets the average differences between seeded and prime FPRs per c
+# outputs to CSV
+def getDeviations():
     avgDeviation = 0
     realD = 0
     sumRand = 0
@@ -241,9 +227,26 @@ def main():
     with open('Data/averageDeviations.csv', 'w', newline='') as csvfile:
         writer = csv.writer(csvfile, delimiter=",")
         writer.writerows(data)
+
+def main():
+    parsePrime()
+    parseSeed()
+    
+    np.array(primeRandFPR2)
+    np.array(primeRandFPR4)
+    np.array(primeRandFPR6)
+    np.array(primeRandFPR7)
+    np.array(primeRandFPR10)
+    
+    np.array(seedRandFPR2)
+    np.array(seedRandFPR4)
+    np.array(seedRandFPR6)
+    np.array(seedRandFPR7)
+    np.array(seedRandFPR10)
+    
+    plotBlooms()
+    getDeviations()
     
     exit
-    
-    # graph stuff here
 
 main()
