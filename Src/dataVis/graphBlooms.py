@@ -191,6 +191,57 @@ def main():
     
     plotBlooms()
     
+    avgDeviation = 0
+    realD = 0
+    sumRand = 0
+    sumSeed = 0
+    currCase = 2
+    
+    data = list()
+    
+    for i in range(0, 5):
+        match i:
+            case 0:
+                currDataRand = primeRandFPR2
+                currDataSeed = seedRandFPR2
+            case 1:
+                currDataRand = primeRandFPR4
+                currDataSeed = seedRandFPR4
+                currCase = 4
+            case 2:
+                currDataRand = primeRandFPR6
+                currDataSeed = seedRandFPR6
+                currCase = 6
+            case 3:
+                currDataRand = primeRandFPR7
+                currDataSeed = seedRandFPR7
+                currCase = 7
+            case 4:
+                currDataRand = primeRandFPR10
+                currDataSeed = seedRandFPR10
+                currCase = 10
+        for j in range(0, 21):
+            sumRand = currDataRand[j]
+            sumSeed = currDataSeed[j]
+            avgDeviation += float(abs(sumRand - sumSeed))
+            realD += sumRand - sumSeed
+        if realD < 0:   
+            avgDeviation = -(float)(avgDeviation/21)
+        else:
+            avgDeviation = (float)(avgDeviation/21)
+        print("Average Deviation at c = " + str(currCase) + ": " + str(avgDeviation))
+        temp = list()
+        temp.append(currCase)
+        temp2 = list()
+        temp2.append(avgDeviation)
+        data.append(temp)
+        data.append(temp2)
+        avgDeviation = 0
+    
+    with open('Data/averageDeviations.csv', 'w', newline='') as csvfile:
+        writer = csv.writer(csvfile, delimiter=",")
+        writer.writerows(data)
+    
     exit
     
     # graph stuff here

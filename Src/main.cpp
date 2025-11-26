@@ -348,7 +348,7 @@ void testBlooms() {
             a.resize(k);
             b.resize(k);
             std::cout << "Testing k = " << k << std::endl;
-            for (int j = 0; j < 11; j++) { // 10 tests per k value
+            for (int j = 0; j < 11; j++) { // 11te tests per k value
                 // make into vector in which i sum and divide at the end?
                 Bloom TPrime(m, n);
                 Bloom TSeed(m, n);
